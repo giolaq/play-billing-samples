@@ -85,6 +85,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$version_lifecycle"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$version_kotlin"
 
+    implementation 'com.amazon.device:amazon-appstore-sdk:3.0.3'
+
     // The following rules are for compiling on environments running JDK9+.
     // In this project, these rules are necessary because data binding is enabled. It fixes the
     // error 'java.lang.NoClassDefFoundError: javax/xml/bind/JAXBException' that occurs when
