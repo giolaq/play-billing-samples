@@ -25,6 +25,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import java.util.HashMap
 import kotlin.collections.set
+import dev.giolaq.trivialdrivesample.R
 
 /*
    This is used for any business logic, as well as to echo LiveData from the BillingRepository.
@@ -82,7 +83,7 @@ class MakePurchaseViewModel(private val tdr: TrivialDriveRepository) : ViewModel
 
     class MakePurchaseViewModelFactory(private val trivialDriveRepository: TrivialDriveRepository) :
         ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MakePurchaseViewModel::class.java)) {
                 return MakePurchaseViewModel(trivialDriveRepository) as T
             }

@@ -37,11 +37,11 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.sample.android.trivialdrivesample.BuildConfig;
+import dev.giolaq.trivialdrivesample.BuildConfig;
 import com.sample.android.trivialdrivesample.MainActivityViewModel;
-import com.sample.android.trivialdrivesample.R;
+import dev.giolaq.trivialdrivesample.R;
 import com.sample.android.trivialdrivesample.TrivialDriveApplication;
-import com.sample.android.trivialdrivesample.databinding.ActivityMainBinding;
+import dev.giolaq.trivialdrivesample.databinding.ActivityMainBinding;
 
 /*
  * MainActivity here exists as a container for the fragments that display the various bits of UI,

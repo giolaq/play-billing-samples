@@ -43,7 +43,7 @@ class MainActivityViewModel(private val tdr: TrivialDriveRepository) : ViewModel
 
     class MainActivityViewModelFactory(private val trivialDriveRepository: TrivialDriveRepository) :
         ViewModelProvider.Factory {
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
                 return MainActivityViewModel(trivialDriveRepository) as T
             }

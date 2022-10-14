@@ -33,13 +33,15 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.sample.android.trivialdrivesample.MakePurchaseViewModel;
-import com.sample.android.trivialdrivesample.R;
+import dev.giolaq.trivialdrivesample.R;
 import com.sample.android.trivialdrivesample.TrivialDriveApplication;
 import com.sample.android.trivialdrivesample.TrivialDriveRepository;
-import com.sample.android.trivialdrivesample.databinding.FragmentMakePurchaseBinding;
+import dev.giolaq.trivialdrivesample.databinding.FragmentMakePurchaseBinding;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import dev.giolaq.trivialdrivesample.databinding.FragmentMakePurchaseBinding;
 
 /**
  * This Fragment is simply a wrapper for the inventory (i.e. items for sale). Here again there is

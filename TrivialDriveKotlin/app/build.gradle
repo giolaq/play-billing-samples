@@ -19,13 +19,13 @@ android {
             storePassword "${password}"
         }*/
     }
-    compileSdkVersion 30
+    compileSdkVersion 33
     buildToolsVersion '30.0.3'
 
     defaultConfig {
-        applicationId 'com.sample.android.trivialdrivesample'
+        applicationId 'dev.giolaq.trivialdrivesample'
         minSdkVersion 21
-        targetSdkVersion 30
+        targetSdkVersion 33
         versionCode 8
         versionName "1.5"
         javaCompileOptions {
@@ -59,6 +59,7 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    namespace 'dev.giolaq.trivialdrivesample'
 }
 
 dependencies {
@@ -78,7 +79,7 @@ dependencies {
 
     implementation "androidx.navigation:navigation-fragment-ktx:$version_navigation"
     implementation "androidx.navigation:navigation-ui-ktx:$version_navigation"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version_kotlin"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version_kotlin_coroutines"
     implementation "androidx.core:core-ktx:$version_core_ktx"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$version_lifecycle"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$version_lifecycle"

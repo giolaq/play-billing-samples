@@ -25,9 +25,9 @@ import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.sample.android.trivialdrivesample.MakePurchaseViewModel;
-import com.sample.android.trivialdrivesample.R;
-import com.sample.android.trivialdrivesample.databinding.InventoryHeaderBinding;
-import com.sample.android.trivialdrivesample.databinding.InventoryItemBinding;
+import dev.giolaq.trivialdrivesample.R;
+import dev.giolaq.trivialdrivesample.databinding.InventoryHeaderBinding;
+import dev.giolaq.trivialdrivesample.databinding.InventoryItemBinding;
 
 import java.util.List;
 

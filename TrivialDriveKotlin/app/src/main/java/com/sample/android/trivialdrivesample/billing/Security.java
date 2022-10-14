@@ -27,7 +27,7 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
-import com.sample.android.trivialdrivesample.BuildConfig;
+import dev.giolaq.trivialdrivesample.BuildConfig;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
