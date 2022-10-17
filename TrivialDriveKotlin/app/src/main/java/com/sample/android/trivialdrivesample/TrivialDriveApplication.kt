@@ -16,6 +16,7 @@
 package com.sample.android.trivialdrivesample
 
 import android.app.Application
+import com.sample.android.trivialdrivesample.billing.AmazonAppstoreIAPDataSource
 import com.sample.android.trivialdrivesample.billing.BillingDataSource
 import com.sample.android.trivialdrivesample.db.GameStateModel
 import kotlinx.coroutines.GlobalScope
@@ -26,8 +27,15 @@ class TrivialDriveApplication : Application() {
     inner class AppContainer {
         private val applicationScope = GlobalScope
         private val gameStateModel = GameStateModel(this@TrivialDriveApplication)
-        private val billingDataSource = BillingDataSource.getInstance(
-            this@TrivialDriveApplication,
+//        private val billingDataSource = BillingDataSource.getInstance(
+//            this@TrivialDriveApplication,
+//            applicationScope,
+//            TrivialDriveRepository.INAPP_SKUS,
+//            TrivialDriveRepository.SUBSCRIPTION_SKUS,
+//            TrivialDriveRepository.AUTO_CONSUME_SKUS
+//        )
+        private val billingDataSource = AmazonAppstoreIAPDataSource.getInstance(
+    this@TrivialDriveApplication,
             applicationScope,
             TrivialDriveRepository.INAPP_SKUS,
             TrivialDriveRepository.SUBSCRIPTION_SKUS,

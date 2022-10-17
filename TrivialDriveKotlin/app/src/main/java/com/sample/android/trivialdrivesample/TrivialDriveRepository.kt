@@ -19,6 +19,7 @@ package com.sample.android.trivialdrivesample
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.LifecycleObserver
+import com.sample.android.trivialdrivesample.billing.AmazonAppstoreIAPDataSource
 import com.sample.android.trivialdrivesample.billing.BillingDataSource
 import com.sample.android.trivialdrivesample.db.GameStateModel
 import kotlinx.coroutines.CoroutineScope
@@ -30,13 +31,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import dev.giolaq.trivialdrivesample.R
+
 /**
  * The repository uses data from the Billing data source and the game state model together to give
  * a unified version of the state of the game to the ViewModel. It works closely with the
  * BillingDataSource to implement consumable items, premium items, etc.
  */
 class TrivialDriveRepository(
-    private val billingDataSource: BillingDataSource,
+    // private val billingDataSource: BillingDataSource,
+    private val billingDataSource: AmazonAppstoreIAPDataSource,
     private val gameStateModel: GameStateModel,
     private val defaultScope: CoroutineScope
 ) {
@@ -50,9 +53,25 @@ class TrivialDriveRepository(
     private fun postMessagesFromBillingFlow() {
         defaultScope.launch {
             try {
+//                billingDataSource.getNewPurchases().collect { skuList ->
+//                    // TODO: Handle multi-line purchases better
+//                    for ( sku in skuList ) {
+//                        when (sku) {
+//                            SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
+//                            SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
+//                            SKU_INFINITE_GAS_MONTHLY,
+//                            SKU_INFINITE_GAS_YEARLY -> {
+//                                // this makes sure that upgrades/downgrades to subscriptions are
+//                                // reflected correctly in our user interface
+//                                billingDataSource.refreshPurchases()
+//                                gameMessages.emit(R.string.message_subscribed)
+//                            }
+//                        }
+//                    }
+//                }
                 billingDataSource.getNewPurchases().collect { skuList ->
                     // TODO: Handle multi-line purchases better
-                    for ( sku in skuList ) {
+                    for (sku in skuList) {
                         when (sku) {
                             SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
                             SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
@@ -135,9 +154,10 @@ class TrivialDriveRepository(
     fun canPurchase(sku: String): Flow<Boolean> {
         return when (sku) {
             SKU_GAS -> {
-                billingDataSource.canPurchase(sku).combine(gasTankLevel()) { canPurchase, gasTankLevel ->
-                    canPurchase && gasTankLevel < GAS_TANK_MAX
-                }
+                billingDataSource.canPurchase(sku)
+                    .combine(gasTankLevel()) { canPurchase, gasTankLevel ->
+                        canPurchase && gasTankLevel < GAS_TANK_MAX
+                    }
             }
             else -> billingDataSource.canPurchase(sku)
         }
@@ -233,7 +253,7 @@ class TrivialDriveRepository(
         // consumed purchases from the billing data source while the app process is alive.
         defaultScope.launch {
             billingDataSource.getConsumedPurchases().collect {
-                for( sku in it ) {
+                for (sku in it) {
                     if (sku == SKU_GAS) {
                         gameStateModel.incrementGas(GAS_TANK_MAX)
                     }
