@@ -102,7 +102,7 @@ class BillingDataSource private constructor(
         knownSubscriptionSKUs: Array<String>?,
         autoConsumeSKUs: Array<String>?
 ) :
-    LifecycleObserver, PurchasesUpdatedListener, BillingClientStateListener {
+    LifecycleObserver, PurchasesUpdatedListener, BillingClientStateListener, IBillingDataSource {
     // Billing client, connection, cached data
     private val billingClient: BillingClient
 
@@ -208,13 +208,13 @@ class BillingDataSource private constructor(
         addSkuFlows(knownSubscriptionSKUs)
     }
 
-    fun getNewPurchases() = newPurchaseFlow.asSharedFlow()
+    override fun getNewPurchases() = newPurchaseFlow.asSharedFlow()
 
     /**
      * This is a flow that is used to observe consumed purchases.
      * @return Flow that contains skus of the consumed purchases.
      */
-    fun getConsumedPurchases() = purchaseConsumedFlow.asSharedFlow()
+    override fun getConsumedPurchases() = purchaseConsumedFlow.asSharedFlow()
 
     /**
      * Returns whether or not the user has purchased a SKU. It does this by returning
@@ -222,7 +222,7 @@ class BillingDataSource private constructor(
      * the Purchase has been acknowledged.
      * @return a Flow that observes the SKUs purchase state
      */
-    fun isPurchased(sku: String): Flow<Boolean> {
+    override fun isPurchased(sku: String): Flow<Boolean> {
         val skuStateFLow = skuStateMap[sku]!!
         return skuStateFLow.map { skuState -> skuState == SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED }
     }
@@ -234,7 +234,7 @@ class BillingDataSource private constructor(
      * SkuDetails.)
      * @return a Flow that observes the SKUs purchase state
      */
-    fun canPurchase(sku: String): Flow<Boolean> {
+    override fun canPurchase(sku: String): Flow<Boolean> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         val skuStateFlow = skuStateMap[sku]!!
 
@@ -251,21 +251,21 @@ class BillingDataSource private constructor(
      * @param sku to get the title from
      * @return title of the requested SKU as an observable Flow<String>
      </String> */
-    fun getSkuTitle(sku: String): Flow<String> {
+    override fun getSkuTitle(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.title
         }
     }
 
-    fun getSkuPrice(sku: String): Flow<String> {
+    override fun getSkuPrice(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.price
         }
     }
 
-    fun getSkuDescription(sku: String): Flow<String> {
+    override fun getSkuDescription(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.description
@@ -353,7 +353,7 @@ class BillingDataSource private constructor(
         GPBLv3 now queries purchases synchronously, simplifying this flow. This only gets active
         purchases.
      */
-    suspend fun refreshPurchases() {
+    override suspend fun refreshPurchases() {
         Log.d(TAG, "Refreshing purchases.")
         var purchasesResult = billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP)
         var billingResult = purchasesResult.billingResult
@@ -407,7 +407,7 @@ class BillingDataSource private constructor(
      * To make things easy, you can send in a list of SKUs that are auto-consumed by the
      * BillingDataSource.
      */
-    suspend fun consumeInappPurchase(sku: String) {
+    override suspend fun consumeInappPurchase(sku: String) {
         val pr = billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP)
         val br = pr.billingResult
         val purchasesList = pr.purchasesList
@@ -625,7 +625,7 @@ class BillingDataSource private constructor(
      * @param upgradeSkusVarargs SKUs that the subscription can be upgraded from
      * @return true if launch is successful
      */
-    fun launchBillingFlow(activity: Activity?, sku: String, vararg upgradeSkusVarargs: String) {
+    override fun launchBillingFlow(activity: Activity?, sku: String, vararg upgradeSkusVarargs: String) {
         val skuDetails = skuDetailsMap[sku]?.value
         if (null != skuDetails) {
             val billingFlowParamsBuilder = BillingFlowParams.newBuilder()
@@ -671,7 +671,7 @@ class BillingDataSource private constructor(
      * been called.
      * @return Flow that indicates the known state of the billing flow.
      */
-    fun getBillingFlowInProcess(): Flow<Boolean> {
+    override fun getBillingFlowInProcess(): Flow<Boolean> {
         return billingFlowInProcess.asStateFlow()
     }
 

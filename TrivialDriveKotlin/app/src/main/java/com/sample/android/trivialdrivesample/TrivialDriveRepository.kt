@@ -21,6 +21,7 @@ import android.util.Log
 import androidx.lifecycle.LifecycleObserver
 import com.sample.android.trivialdrivesample.billing.AmazonAppstoreIAPDataSource
 import com.sample.android.trivialdrivesample.billing.BillingDataSource
+import com.sample.android.trivialdrivesample.billing.IBillingDataSource
 import com.sample.android.trivialdrivesample.db.GameStateModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,8 +39,7 @@ import dev.giolaq.trivialdrivesample.R
  * BillingDataSource to implement consumable items, premium items, etc.
  */
 class TrivialDriveRepository(
-    // private val billingDataSource: BillingDataSource,
-    private val billingDataSource: AmazonAppstoreIAPDataSource,
+    private val billingDataSource: IBillingDataSource,
     private val gameStateModel: GameStateModel,
     private val defaultScope: CoroutineScope
 ) {
@@ -190,7 +190,7 @@ class TrivialDriveRepository(
         billingDataSource.refreshPurchases()
     }
 
-    val billingLifecycleObserver: LifecycleObserver
+    val billingLifecycleObserver: IBillingDataSource
         get() = billingDataSource
 
     // There's lots of information in SkuDetails, but our app only needs a few things, since our

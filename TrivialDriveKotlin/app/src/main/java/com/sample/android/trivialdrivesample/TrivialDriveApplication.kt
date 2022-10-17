@@ -16,40 +16,67 @@
 package com.sample.android.trivialdrivesample
 
 import android.app.Application
+import android.content.pm.PackageManager
+import android.os.Build
 import com.sample.android.trivialdrivesample.billing.AmazonAppstoreIAPDataSource
 import com.sample.android.trivialdrivesample.billing.BillingDataSource
+import com.sample.android.trivialdrivesample.billing.IBillingDataSource
 import com.sample.android.trivialdrivesample.db.GameStateModel
 import kotlinx.coroutines.GlobalScope
 
+
 class TrivialDriveApplication : Application() {
     lateinit var appContainer: AppContainer
+
     // Container of objects shared across the whole app
-    inner class AppContainer {
+    inner class AppContainer(private val billingDataSource: IBillingDataSource) {
         private val applicationScope = GlobalScope
         private val gameStateModel = GameStateModel(this@TrivialDriveApplication)
-//        private val billingDataSource = BillingDataSource.getInstance(
-//            this@TrivialDriveApplication,
-//            applicationScope,
-//            TrivialDriveRepository.INAPP_SKUS,
-//            TrivialDriveRepository.SUBSCRIPTION_SKUS,
-//            TrivialDriveRepository.AUTO_CONSUME_SKUS
-//        )
-        private val billingDataSource = AmazonAppstoreIAPDataSource.getInstance(
-    this@TrivialDriveApplication,
-            applicationScope,
-            TrivialDriveRepository.INAPP_SKUS,
-            TrivialDriveRepository.SUBSCRIPTION_SKUS,
-            TrivialDriveRepository.AUTO_CONSUME_SKUS
-        )
         val trivialDriveRepository = TrivialDriveRepository(
-            billingDataSource,
+            this.billingDataSource,
             gameStateModel,
             applicationScope
         )
     }
 
+    private fun getInstallerPackageName(): String? {
+        try {
+            val packageName: String = packageName
+            val pm: PackageManager = packageManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val info = pm.getInstallSourceInfo(packageName)
+                return info.installingPackageName
+            }
+            @Suppress("DEPRECATION")
+            return pm.getInstallerPackageName(packageName)
+        } catch (e: PackageManager.NameNotFoundException) {
+        }
+        return ""
+    }
     override fun onCreate() {
         super.onCreate()
-        appContainer = AppContainer()
+
+
+        val installerPackageName = getInstallerPackageName()
+
+        val billingDataSource =  if (installerPackageName == "com.amazon.venezia" || installerPackageName.isNullOrEmpty()) {
+            AmazonAppstoreIAPDataSource.getInstance(
+                this@TrivialDriveApplication,
+                GlobalScope,
+                TrivialDriveRepository.INAPP_SKUS,
+                TrivialDriveRepository.SUBSCRIPTION_SKUS,
+                TrivialDriveRepository.AUTO_CONSUME_SKUS
+            )
+        } else {
+            BillingDataSource.getInstance(
+            this@TrivialDriveApplication,
+                GlobalScope,
+            TrivialDriveRepository.INAPP_SKUS,
+            TrivialDriveRepository.SUBSCRIPTION_SKUS,
+            TrivialDriveRepository.AUTO_CONSUME_SKUS
+        )
+        }
+
+        appContainer = AppContainer(billingDataSource as IBillingDataSource)
     }
 }

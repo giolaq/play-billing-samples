@@ -20,8 +20,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
-private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 private const val SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L // 4 hours
 
 class AmazonAppstoreIAPDataSource private constructor(
@@ -30,7 +28,7 @@ class AmazonAppstoreIAPDataSource private constructor(
     knownInappSKUs: Array<String>?,
     knownSubscriptionSKUs: Array<String>?,
     autoConsumeSKUs: Array<String>?
-) : LifecycleObserver, PurchasingListener {
+) : LifecycleObserver, PurchasingListener, IBillingDataSource {
 
     private enum class SkuState {
         SKU_STATE_UNPURCHASED, SKU_STATE_PENDING, SKU_STATE_PURCHASED, SKU_STATE_PURCHASED_AND_ACKNOWLEDGED
@@ -42,10 +40,6 @@ class AmazonAppstoreIAPDataSource private constructor(
 
     // SKUs to auto-consume
     private val knownAutoConsumeSKUs: MutableSet<String>
-
-
-    // how long before the data source tries to reconnect to Google play
-    private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
 
     // when was the last successful SkuDetailsResponse?
     private var skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME
@@ -64,7 +58,7 @@ class AmazonAppstoreIAPDataSource private constructor(
      * This is a flow that is used to observe consumed purchases.
      * @return Flow that contains skus of the consumed purchases.
      */
-    fun getConsumedPurchases() = purchaseConsumedFlow.asSharedFlow()
+    override fun getConsumedPurchases() = purchaseConsumedFlow.asSharedFlow()
 
     /**
      * Returns whether or not the user has purchased a SKU. It does this by returning
@@ -72,7 +66,7 @@ class AmazonAppstoreIAPDataSource private constructor(
      * the Purchase has been acknowledged.
      * @return a Flow that observes the SKUs purchase state
      */
-    fun isPurchased(sku: String): Flow<Boolean> {
+    override fun isPurchased(sku: String): Flow<Boolean> {
         val skuStateFLow = skuStateMap[sku]!!
         return skuStateFLow.map { skuState -> skuState == SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED }
     }
@@ -85,21 +79,21 @@ class AmazonAppstoreIAPDataSource private constructor(
      * @param sku to get the title from
      * @return title of the requested SKU as an observable Flow<String>
     </String> */
-    fun getSkuTitle(sku: String): Flow<String> {
+    override fun getSkuTitle(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.title
         }
     }
 
-    fun getSkuPrice(sku: String): Flow<String> {
+    override fun getSkuPrice(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.price
         }
     }
 
-    fun getSkuDescription(sku: String): Flow<String> {
+    override fun getSkuDescription(sku: String): Flow<String> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         return skuDetailsFlow.mapNotNull { skuDetails ->
             skuDetails?.description
@@ -111,24 +105,8 @@ class AmazonAppstoreIAPDataSource private constructor(
      * To make things easy, you can send in a list of SKUs that are auto-consumed by the
      * BillingDataSource.
      */
-    fun consumeInappPurchase(sku: String) {
+    override suspend fun consumeInappPurchase(sku: String) {
         setSkuState(sku, SkuState.SKU_STATE_UNPURCHASED)
-    //        val br = pr.billingResult
-//        val purchasesList = pr.purchasesList
-//        if (br.responseCode != BillingClient.BillingResponseCode.OK) {
-//            Log.e(BillingDataSource.TAG, "Problem getting purchases: " + br.debugMessage)
-//        } else {
-//            for (purchase in purchasesList) {
-//                // for right now any bundle of SKUs must all be consumable
-//                for (purchaseSku in purchase.skus) {
-//                    if (purchaseSku == sku) {
-//                        consumePurchase(purchase)
-//                        return
-//                    }
-//                }
-//            }
-//        }
-//        Log.e(BillingDataSource.TAG, "Unable to consume SKU: $sku Sku not found.")
     }
 
     /**
@@ -137,7 +115,7 @@ class AmazonAppstoreIAPDataSource private constructor(
      * been called.
      * @return Flow that indicates the known state of the billing flow.
      */
-    fun getBillingFlowInProcess(): Flow<Boolean> {
+    override fun getBillingFlowInProcess(): Flow<Boolean> {
         return billingFlowInProcess.asStateFlow()
     }
 
@@ -148,7 +126,7 @@ class AmazonAppstoreIAPDataSource private constructor(
      * SkuDetails.)
      * @return a Flow that observes the SKUs purchase state
      */
-    fun canPurchase(sku: String): Flow<Boolean> {
+    override fun canPurchase(sku: String): Flow<Boolean> {
         val skuDetailsFlow = skuDetailsMap[sku]!!
         val skuStateFlow = skuStateMap[sku]!!
 
@@ -167,31 +145,9 @@ class AmazonAppstoreIAPDataSource private constructor(
      * @param upgradeSkusVarargs SKUs that the subscription can be upgraded from
      * @return true if launch is successful
      */
-    fun launchBillingFlow(activity: Activity?, sku: String, vararg upgradeSkusVarargs: String) {
+    override fun launchBillingFlow(activity: Activity?, sku: String, vararg upgradeSkusVarargs: String) {
         val skuDetails = skuDetailsMap[sku]?.value
         if (null != skuDetails) {
-//            val billingFlowParamsBuilder = BillingFlowParams.newBuilder()
-//            billingFlowParamsBuilder.setSkuDetails(skuDetails)
-//            val upgradeSkus = arrayOf(*upgradeSkusVarargs)
-//            defaultScope.launch {
-//                val heldSubscriptions = getPurchases(upgradeSkus, BillingClient.SkuType.SUBS)
-//                when (heldSubscriptions.size) {
-//                    1 -> {
-//                        val purchase = heldSubscriptions[0]
-//                        billingFlowParamsBuilder.setSubscriptionUpdateParams(
-//                            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-//                                .setOldSkuPurchaseToken(purchase.purchaseToken)
-//                                .build()
-//                        )
-//                    }
-//                    0 -> {
-//                    }
-//                    else -> Log.e(
-//                        TAG,
-//                        heldSubscriptions.size.toString() +
-//                                " subscriptions subscribed to. Upgrade not possible."
-//                    )
-//                }
             defaultScope.launch {
                 PurchasingService.purchase(skuDetails.sku)
             }
@@ -251,13 +207,13 @@ class AmazonAppstoreIAPDataSource private constructor(
         }
     }
 
-    fun getNewPurchases() = newPurchaseFlow.asSharedFlow()
+    override fun getNewPurchases() = newPurchaseFlow.asSharedFlow()
 
     /*
       GPBLv3 now queries purchases synchronously, simplifying this flow. This only gets active
       purchases.
    */
-    fun refreshPurchases() {
+    override suspend fun refreshPurchases() {
         Log.d(TAG, "Refreshing purchases.")
        // PurchasingService.getPurchaseUpdates(true)
     }
@@ -304,18 +260,6 @@ class AmazonAppstoreIAPDataSource private constructor(
                     }
                     updatedSkus.add(sku.toString())
                 }
-                // Global check to make sure all purchases are signed correctly.
-                // This check is best performed on your server.
-                // val purchaseState = purchase.purchaseState
-                //  if (purchaseState == Purchase.PurchaseState.PURCHASED) {
-//                    if (!isSignatureValid(purchase)) {
-//                        Log.e(
-//                            TAG,
-//                            "Invalid signature. Check to make sure your " +
-//                                    "public key is correct."
-//                        )
-//                        continue
-//                    }
                 // only set the purchased state after we've validated the signature.
                 setSkuStateFromPurchase(purchase)
                 var isConsumable = false
@@ -342,32 +286,9 @@ class AmazonAppstoreIAPDataSource private constructor(
                         setSkuState(purchase.sku, SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
                         newPurchaseFlow.tryEmit(purchases.map { it.sku })
                     }
-                    //else if (!purchase.isAcknowledged) {
-                    // acknowledge everything --- new purchases are ones not yet acknowledged
-//                            val billingResult = billingClient.acknowledgePurchase(
-//                                AcknowledgePurchaseParams.newBuilder()
-//                                    .setPurchaseToken(purchase.purchaseToken)
-//                                    .build()
-//                            )
-//                            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
-//                                Log.e(BillingDataSource.TAG, "Error acknowledging purchase: ${purchase.skus.toString()}")
-//                            } else {
-//                                // purchase acknowledged
-//                                for (sku in purchase.skus) {
-//                                    setSkuState(sku, SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
-//                                }
-//                            }
                 }
             }
-        } else {
-            // make sure the state is set
-            //}
         }
-//        } else {
-//            Log.d(TAG, "Empty purchase list.")
-//        }
-        // Clear purchase state of anything that didn't come with this purchase list if this is
-        // part of a refresh.
         if (null != skusToUpdate) {
             for (sku in skusToUpdate) {
                 if (!updatedSkus.contains(sku)) {
@@ -396,19 +317,6 @@ class AmazonAppstoreIAPDataSource private constructor(
 
         purchaseConsumptionInProcess.remove(productSku)
 
-//        if (consumePurchaseResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-//            Log.d(TAG, "Consumption successful. Emitting sku.")
-//            defaultScope.launch {
-//                purchaseConsumedFlow.emit(purchase.skus)
-//            }
-//            // Since we've consumed the purchase
-//            for (sku in purchase.skus) {
-//                setSkuState(sku, SkuState.SKU_STATE_UNPURCHASED)
-//            }
-//        } else {
-//            Log.e(TAG, "Error while consuming: ${consumePurchaseResult.billingResult.debugMessage}")
-//        }
-
     }
 
     /**
@@ -427,17 +335,7 @@ class AmazonAppstoreIAPDataSource private constructor(
                             "sure SKU matches SKUS in the Play developer console."
                 )
             } else {
-//                when (purchase.purchaseState) {
-//                    Purchase.PurchaseState.PENDING -> skuStateFlow.tryEmit(SkuState.SKU_STATE_PENDING)
-//                    Purchase.PurchaseState.UNSPECIFIED_STATE -> skuStateFlow.tryEmit(
-//                        SkuState.SKU_STATE_UNPURCHASED)
-//                    Purchase.PurchaseState.PURCHASED -> if (purchase.isAcknowledged) {
-//                        skuStateFlow.tryEmit(SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
-//                    } else {
-//                        skuStateFlow.tryEmit(SkuState.SKU_STATE_PURCHASED)
-//                    }
-//                    else -> Log.e(TAG, "Purchase in unknown state: " + purchase.purchaseState)
-//                }
+
                 skuStateFlow.tryEmit(SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
 
             }
@@ -534,10 +432,6 @@ class AmazonAppstoreIAPDataSource private constructor(
                 // Since we've consumed the purchase
                 // for (sku in purchase.skus) {
                 setSkuState(purchaseResponse.receipt.sku.toString(), SkuState.SKU_STATE_UNPURCHASED)
-                //PurchasingService.notifyFulfillment(purchaseResponse.receipt.receiptId, FulfillmentResult.FULFILLED)
-                //consumePurchase(purchaseResponse.receipt.receiptId, purchaseResponse.receipt.sku)
-
-                // }
             } else {
                 Log.e(
                     TAG,
@@ -550,7 +444,7 @@ class AmazonAppstoreIAPDataSource private constructor(
     }
 
     override fun onPurchaseUpdatesResponse(purchaseUpdatesResponse: PurchaseUpdatesResponse) {
-        var billingResult = purchaseUpdatesResponse.requestStatus
+        val billingResult = purchaseUpdatesResponse.requestStatus
         if (billingResult != PurchaseUpdatesResponse.RequestStatus.SUCCESSFUL) {
             Log.e(TAG, "Problem getting purchases: $billingResult")
         } else {

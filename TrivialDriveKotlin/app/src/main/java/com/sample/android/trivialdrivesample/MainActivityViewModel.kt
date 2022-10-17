@@ -35,7 +35,7 @@ class MainActivityViewModel(private val tdr: TrivialDriveRepository) : ViewModel
     }
 
     val billingLifecycleObserver: LifecycleObserver
-        get() = tdr.billingLifecycleObserver
+        get() = tdr.billingLifecycleObserver as LifecycleObserver
 
     companion object {
         val TAG = "TrivialDrive:" + GameViewModel::class.simpleName
